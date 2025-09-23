@@ -96,11 +96,11 @@ outfitsBookmarkCollectionList = (
 
 ```typescript
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { outfits_쿼리 } from "../hooks/api/outfits-queries";
+import { outfitsQueries } from "../hooks/api/outfits-queries";
 
 function OutfitsList() {
   const { data } = useSuspenseQuery(
-    outfits_쿼리.bookmarkCollectionList({ limit: 20 })
+    outfitsQueries.bookmarkCollectionList({ limit: 20 })
   );
 
   return (
@@ -166,10 +166,10 @@ function CreateOutfit() {
 ### QueryKey 구조
 
 ```typescript
-const {entity}_쿼리 = {
+const {entity}Queries = {
   all: () => ['{entity}'],
-  lists: () => [...{entity}_쿼리.all(), 'list'],
-  details: () => [...{entity}_쿼리.all(), 'detail'],
+  lists: () => [...{entity}Queries.all(), 'list'],
+  details: () => [...{entity}Queries.all(), 'detail'],
   // 구체적인 쿼리들...
 };
 ```

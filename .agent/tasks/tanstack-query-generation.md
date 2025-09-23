@@ -10,8 +10,9 @@ required:
 
 - api_spec: "API specification code block (TypeScript format)"
 - entity_name: "Entity name (e.g., outfits, users, products)"
-- output_directory: "Output directory path (default: src/hooks/api)"
-  optional:
+- output_directory: "Output directory path (e.g., src/hooks/api)"
+
+optional:
 
 - file_naming_style: "File naming convention (kebab-case|camelCase, default: kebab-case)"
 
@@ -54,9 +55,22 @@ Following TanStack Query conventions (@tanstack-guide.md):
    - Check if parameters include cursor/offset
    - Check if response type includes pagination fields
 
-### Step 2: User Selection (GET API only) - Mandatory Step
+### Step 2: User Input Collection - Mandatory Steps
 
-**🚨 Important**: After completing GET API analysis, **MUST** ask the user the following question:
+**🚨 Important**: Must collect the following required inputs from user:
+
+#### 2.1 Output Directory (All APIs)
+
+```
+📂 코드를 생성할 디렉토리 경로를 입력해주세요:
+(예: src/hooks/api, hooks/api, etc.)
+
+경로:
+```
+
+#### 2.2 Mock Data Selection (GET API only)
+
+**GET API인 경우만** 다음 질문:
 
 ```
 📝 Mock 데이터도 함께 생성하시겠습니까?
@@ -69,12 +83,13 @@ Following TanStack Query conventions (@tanstack-guide.md):
 
 **Implementation Rules**:
 
-- ✅ **Required**: Must wait for user response
-- ✅ **Required**: Wait until receiving 1 or 2 input
+- ✅ **Required**: Must collect output directory for all APIs
+- ✅ **Required**: Must wait for user response on mock data (GET API only)
+- ✅ **Required**: Wait until receiving valid inputs
 - ❌ **Forbidden**: Auto-generate mock data without user selection
-- ❌ **Forbidden**: Generate mock data by default
+- ❌ **Forbidden**: Use default directory without user input
 
-**For POST/PUT/DELETE APIs**: Skip this step (Generate Mutation only)
+**For POST/PUT/DELETE APIs**: Only collect output directory (Skip mock data question)
 
 ### Step 3: Code Generation Strategy
 
@@ -207,19 +222,21 @@ Following TanStack Query conventions (@tanstack-guide.md):
 // ✅ Only allowed imports
 import { queryOptions, infiniteQueryOptions } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { myIdeasApi } from "@src/domains/app/swagger/acloset-api"; // Always from acloset-api
 
 // ❌ Forbidden import detection
 import { createQueryKeys } from "@lukemorales/query-key-factory"; // External library
 import { someHelper } from "./helpers"; // Undefined helper
+import { MyIdeas } from "@src/domains/app/swagger/generated/MyIdeas"; // Direct class import forbidden
 ```
 
 #### 2. File Structure Validation
 
 ```typescript
 // ✅ Correct structure (tanstack-query-tmpl.yaml compliant)
-const {entity}_쿼리 = {
+const {entity}Queries = {
   all: () => ['{entity}'],
-  lists: () => [...{entity}_쿼리.all(), 'list'],
+  lists: () => [...{entity}Queries.all(), 'list'],
   // Only Query Options included
 };
 
@@ -285,10 +302,10 @@ Solution: Use only patterns defined in tanstack-query-tmpl.yaml.
 📖 **Usage:**
 ```typescript
 // 1. Import from Query Options file
-import { {entity_name}_쿼리 } from './{entity-name}-queries';
+import { {entity_camel}Queries } from './{entity-name}-queries';
 
 // 2. Use in component
-const { data } = useSuspenseQuery({entity_name}_쿼리.{method_name}(params));
+const { data } = useSuspenseQuery({entity_camel}Queries.{method_name}(params));
 
 // 3. Use Mutation (if applicable)
 import { use{Method}{Entity}Mutation } from './use-{method}-{entity-name}-mutation';
@@ -354,16 +371,16 @@ function validateFileName(fileName: string, apiMethod: string): boolean {
 function validateFileContent(content: string, fileType: string): boolean {
   const rules = {
     queries: {
-      required: ["_쿼리", "queryOptions", "infiniteQueryOptions"],
+      required: ["Queries", "queryOptions", "infiniteQueryOptions"],
       forbidden: ["useMutation", "export const use", "React.FC"],
     },
     mutation: {
       required: ["useMutation", "useQueryClient"],
-      forbidden: ["_쿼리 = {", "queryOptions", "React.FC"],
+      forbidden: ["Queries = {", "queryOptions", "React.FC"],
     },
     mock: {
       required: ["mock", "export const"],
-      forbidden: ["useMutation", "_쿼리 = {", "React.FC"],
+      forbidden: ["useMutation", "Queries = {", "React.FC"],
     },
   };
 
@@ -419,6 +436,36 @@ Solution:
 3. Verify function names and parameter types are clearly defined
 
 다시 시도해주세요.
+
+```
+
+### Missing API Instance Errors
+
+```
+
+❌ **API Instance Not Found**
+
+Issue: The API instance '{entityApi}' is not available in acloset-api.ts
+
+Solution:
+
+1. Add the missing instance to @src/domains/app/swagger/acloset-api.ts:
+
+   ```typescript
+   import { {EntityClass} } from './generated/{EntityClass}';
+
+   /**
+    * {Entity} 도메인 API 서비스.
+    */
+   export const {entity}Api = new {EntityClass}(httpClient);
+   ```
+
+2. Then use the standard import:
+   ```typescript
+   import { {entity}Api } from '@src/domains/app/swagger/acloset-api';
+   ```
+
+Note: All API instances must be centrally managed in acloset-api.ts
 
 ```
 

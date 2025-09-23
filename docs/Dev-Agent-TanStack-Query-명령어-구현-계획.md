@@ -258,13 +258,13 @@ sections:
 
   - id: query_keys
     content: |
-      const {{entity_name}}_쿼리 = {
+      const {{entity_name}}Queries = {
         all: () => ['{{entity_name}}'],
         {{#if has_list}}
-        lists: () => [...{{entity_name}}_쿼리.all(), 'list'],
+        lists: () => [...{{entity_name}}Queries.all(), 'list'],
         {{/if}}
         {{#if has_detail}}
-        details: () => [...{{entity_name}}_쿼리.all(), 'detail'],
+        details: () => [...{{entity_name}}Queries.all(), 'detail'],
         {{/if}}
         {{#each query_methods}}
         {{method_name}}: {{method_params}} =>
@@ -282,7 +282,7 @@ sections:
         {{/each}}
       };
 
-      export { {{entity_name}}_쿼리 };
+      export { {{entity_name}}Queries };
 ```
 
 #### Mock 데이터 템플릿 (mock-data-tmpl.yaml)
@@ -344,7 +344,7 @@ sections:
     content: |
       import { useMutation, useQueryClient } from '@tanstack/react-query';
       import { {{api_import}} } from '{{api_path}}';
-      import { {{entity_name}}_쿼리 } from './{{entity_name}}-queries';
+      import { {{entity_name}}Queries } from './{{entity_name}}-queries';
       {{#if has_request_type}}
       import { {{request_type}} } from '{{types_path}}';
       {{/if}}
@@ -354,7 +354,7 @@ sections:
         return useMutation({
           mutationFn: ({{mutation_params}}) => {{api_call}},
           onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: {{entity_name}}_쿼리.all() });
+            queryClient.invalidateQueries({ queryKey: {{entity_name}}Queries.all() });
           },
         });
       };
@@ -418,12 +418,12 @@ import { infiniteQueryOptions } from "@tanstack/react-query";
 import { outfitsApi } from "../api/outfits";
 import { OutfitsBookmarkCollectionListParams } from "../types/outfits";
 
-const outfits_쿼리 = {
+const outfitsQueries = {
   all: () => ["outfits"],
-  lists: () => [...outfits_쿼리.all(), "list"],
+  lists: () => [...outfitsQueries.all(), "list"],
   bookmarkCollectionList: (query: OutfitsBookmarkCollectionListParams) =>
     infiniteQueryOptions({
-      queryKey: [...outfits_쿼리.lists(), "bookmark-collections", query],
+      queryKey: [...outfitsQueries.lists(), "bookmark-collections", query],
       queryFn: async ({ pageParam }) => {
         return outfitsApi.outfitsBookmarkCollectionList({
           ...query,
@@ -435,7 +435,7 @@ const outfits_쿼리 = {
     }),
 };
 
-export { outfits_쿼리 };
+export { outfitsQueries };
 ````
 
 #### `outfits-mock.ts` (Mock 데이터 선택 시)

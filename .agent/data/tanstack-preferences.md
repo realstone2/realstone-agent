@@ -1,93 +1,159 @@
-# TanStack Query 설정 및 기본값
+# TanStack Query Settings and Defaults
 
 <!-- Powered by BMAD™ Core -->
 
-## 기본 설정
+## Basic Configuration
 
-### Query 옵션 기본값
+### Query Option Defaults
 
-- **staleTime**: 5분 (300,000ms) - 리스트 쿼리
-- **staleTime**: 10분 (600,000ms) - 상세 쿼리
-- **gcTime**: 10분 (600,000ms)
-- **retry**: 3회
+- **staleTime**: 5 minutes (300,000ms) - List queries
+- **staleTime**: 10 minutes (600,000ms) - Detail queries
+- **gcTime**: 10 minutes (600,000ms)
+- **retry**: 3 times
 - **refetchOnWindowFocus**: false
 
-### 페이지네이션 기본값
+### Pagination Defaults
 
 - **initialPageParam**: ""
-- **cursor 필드명**: "cursor" 또는 "nextCursor"
-- **hasMore 필드명**: "hasMore" 또는 "hasNext"
+- **cursor field name**: "cursor" or "nextCursor"
+- **hasMore field name**: "hasMore" or "hasNext"
+- **getNextPageParam**: Use `getNextPageParam2(lastPage.pagination)` helper function
 
-## 파일명 컨벤션
+## File Naming Conventions
 
-### Query 파일
+### Query Files
 
-- 형식: `{entity-name}-queries.ts`
-- 예: `outfits-queries.ts`, `users-queries.ts`
+- Format: `{entity-name}-queries.ts`
+- Examples: `outfits-queries.ts`, `users-queries.ts`
 
-### Mutation 파일
+### Mutation Files
 
-- 형식: `use-{method}-{entity-name}-mutation.ts`
-- 예: `use-post-outfit-mutation.ts`, `use-put-user-mutation.ts`
+- Format: `use-{method}-{entity-name}-mutation.ts`
+- Examples: `use-post-outfit-mutation.ts`, `use-put-user-mutation.ts`
 
-### Mock 데이터 파일
+### Mock Data Files
 
-- 형식: `{entity-name}-mock.ts`
-- 예: `outfits-mock.ts`, `users-mock.ts`
+- Format: `{entity-name}-mock.ts`
+- Examples: `outfits-mock.ts`, `users-mock.ts`
 
-## QueryKey 구조
+## QueryKey Structure
 
 ```typescript
-const {entity}_쿼리 = {
+const {entity}Queries = {
   all: () => ['{entity}'],
-  lists: () => [...{entity}_쿼리.all(), 'list'],
-  details: () => [...{entity}_쿼리.all(), 'detail'],
-  // 구체적인 쿼리들...
+  lists: () => [...{entity}Queries.all(), 'list'],
+  details: () => [...{entity}Queries.all(), 'detail'],
+  // Specific queries...
 };
 ```
 
-## Import 경로 기본값
+## Default Import Paths
 
 ```typescript
-// API 클라이언트
-import { {entity}Api } from '../api/{entity}';
+// API client
+import { {entity} } from '@src/domains/app/swagger/acloset-api';
 
-// 타입 정의
-import { {TypeName} } from '../types/{entity}';
+
+// Type definitions
+import type { {TypeName} } from '@src/domains/app/swagger/generated/data-contracts';
 
 // TanStack Query
 import { queryOptions, infiniteQueryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+
+// Pagination helper
+import { getNextPageParam2 } from '@libs/react-query/utils';
 ```
 
-## Mock 데이터 생성 규칙
+## API Client Instance Management Rules
 
-### 기본 Mock 값 매핑
+### 1. Default import from acloset-api.ts (Priority)
 
-#### 문자열 타입
+```typescript
+import { myIdeasApi } from "@src/domains/app/swagger/acloset-api";
 
-- `id`: UUID 형식 또는 접두사\_숫자 형식
-- `name`, `title`: 의미있는 한글명
-- `description`: 상세한 한글 설명
-- `email`: 실제 형식의 이메일
-- `url`, `imageUrl`: 예시 URL
-- `createdAt`, `updatedAt`: ISO 날짜 문자열
+// Usage examples:
+// - clothesApi, closetsApi, ideasApi, myIdeasApi, etc.
+// - Use pre-generated instances for each domain
+```
 
-#### 숫자 타입
+### 2. Create if not in acloset-api.ts
 
-- `count`, `itemCount`: 1-100 사이 랜덤
-- `price`: 1000단위 가격
-- `age`: 20-60 사이
+**Add instance directly to acloset-api.ts file:**
 
-#### 불린 타입
+```typescript
+// Add to @src/domains/app/swagger/acloset-api.ts
+import { {EntityClass} } from './generated/{EntityClass}';
 
-- 의미에 따라 적절한 기본값 설정
+/**
+ * {Entity} domain API service.
+ */
+export const {entity}Api = new {EntityClass}(httpClient);
+```
 
-### 배열 Mock 데이터
+**Then use standard import:**
 
-- 기본 2-3개 아이템 생성
-- 다양성을 위해 각기 다른 값 설정
+```typescript
+import { {entity}Api } from '@src/domains/app/swagger/acloset-api';
+```
 
-### 페이지네이션 Mock
+### API Instance Mapping Examples
 
-- `nextCursor`: "cursor_page_2" 형식
-- `hasMore`: true (테스트 편의성)
+- `my-ideas` → `myIdeasApi`
+- `clothes` → `clothesApi`
+- `closets` → `closetsApi`
+- `ideas` → `ideasApi`
+
+## Mock Data Generation Rules
+
+### Basic Mock Value Mapping
+
+#### String Types
+
+- `id`: UUID format or prefix_number format
+- `name`, `title`: Meaningful Korean names
+- `description`: Detailed Korean descriptions
+- `email`: Valid email format
+- `url`, `imageUrl`: Example URLs
+- `createdAt`, `updatedAt`: ISO date strings
+
+#### Number Types
+
+- `count`, `itemCount`: Random between 1-100
+- `price`: Prices in thousands units
+- `age`: Between 20-60
+
+#### Boolean Types
+
+- Set appropriate default values based on meaning
+
+### Array Mock Data
+
+- Generate 2-3 items by default
+- Set different values for variety
+
+### Pagination Mock
+
+- `nextCursor`: "cursor_page_2" format
+- `hasMore`: true (for testing convenience)
+
+## Mock Data Application Rules
+
+### Using Mock Data in Query Options
+
+When mock data generation is selected:
+
+```typescript
+// Real API call (commented out)
+// queryFn: async ({ pageParam }) => {
+//   return {entity}Api.{functionName}({
+//     ...query,
+//     cursor: pageParam,
+//   });
+// },
+
+// Mock data usage (development)
+queryFn: async ({ pageParam }) => {
+  // TODO: Remove mock data and connect real API
+  return Promise.resolve(mock{EntityPascal}List);
+},
+```

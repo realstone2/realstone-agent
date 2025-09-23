@@ -13,10 +13,10 @@ sections:
   - id: mutation_hook
     content: |
       import { useMutation, useQueryClient } from '@tanstack/react-query';
-      import { {{api_import}} } from '{{api_path}}';
-      import { {{entity_name}}_쿼리 } from './{{entity_name}}-queries';
+      import { {{api_import}} } from '@src/domains/app/swagger/acloset-api';
+      import { {{entity_camel}}Queries } from './{{entity_name}}-queries';
       {{#if has_request_type}}
-      import { {{request_type}} } from '{{types_path}}';
+      import type { {{request_type}} } from '@src/domains/app/swagger/generated/data-contracts';
       {{/if}}
 
       export const use{{method_pascal}}{{entity_pascal}}Mutation = () => {
@@ -24,7 +24,7 @@ sections:
         return useMutation({
           mutationFn: ({{mutation_params}}) => {{api_call}},
           onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: {{entity_name}}_쿼리.all() });
+            queryClient.invalidateQueries({ queryKey: {{entity_camel}}Queries.all() });
           },
           onError: (error) => {
             console.error('{{method_pascal}} {{entity_pascal}} failed:', error);
@@ -32,7 +32,7 @@ sections:
         });
       };
 
-# 메서드별 템플릿 변형
+# Method-specific template variations
 method_templates:
   POST:
     mutation_name: "create"
@@ -54,22 +54,22 @@ method_templates:
     success_message: "{{entity_pascal}} deleted successfully"
     invalidation_strategy: "all"
 
-# 실제 생성 예시:
+# Example output:
 example_output: |
   import { useMutation, useQueryClient } from '@tanstack/react-query';
-  import { outfitsApi } from '../api/outfits';
-  import { outfits_쿼리 } from './outfits-queries';
-  import { CreateOutfitRequest } from '../types/outfits';
+  import { myIdeasApi } from '@src/domains/app/swagger/acloset-api';
+  import { myIdeasQueries } from './my-ideas-queries';
+  import type { PostMyIdeasRequest } from '@src/domains/app/swagger/generated/data-contracts';
 
-  export const usePostOutfitMutation = () => {
+  export const usePostMyIdeasMutation = () => {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: (data: CreateOutfitRequest) => outfitsApi.createOutfit(data),
+      mutationFn: (data: PostMyIdeasRequest) => myIdeasApi.myIdeasCreate(data),
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: outfits_쿼리.all() });
+        queryClient.invalidateQueries({ queryKey: myIdeasQueries.all() });
       },
       onError: (error) => {
-        console.error('Post Outfit failed:', error);
+        console.error('Post MyIdeas failed:', error);
       },
     });
   };
