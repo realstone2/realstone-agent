@@ -1,0 +1,73 @@
+# TanStack Query Options Template
+# <!-- Powered by BMAD™ Core -->
+
+template:
+  id: tanstack-query-template-v1
+  name: TanStack Query Options
+  version: 1.0
+  output:
+    format: typescript
+    filename: "{{output_directory}}/{{entity_name}}-queries.ts"
+
+sections:
+  - id: imports
+    content: |
+      import { queryOptions, infiniteQueryOptions } from '@tanstack/react-query';
+      import { {{api_import}} } from '{{api_path}}';
+      {{#if has_types}}
+      import { {{type_imports}} } from '{{types_path}}';
+      {{/if}}
+
+  - id: query_keys
+    content: |
+      const {{entity_name}}_쿼리 = {
+        all: () => ['{{entity_name}}'],
+        {{#if has_list}}
+        lists: () => [...{{entity_name}}_쿼리.all(), 'list'],
+        {{/if}}
+        {{#if has_detail}}
+        details: () => [...{{entity_name}}_쿼리.all(), 'detail'],
+        {{/if}}
+        {{#each query_methods}}
+        {{method_name}}: {{method_params}} =>
+          {{#if is_infinite}}infiniteQueryOptions{{else}}queryOptions{{/if}}({
+            queryKey: [...{{parent_key}}, {{key_params}}],
+            queryFn: {{query_fn}},
+            {{#if is_infinite}}
+            initialPageParam: '{{initial_page}}',
+            getNextPageParam: lastPage => lastPage.{{next_cursor_field}},
+            {{/if}}
+            {{#if stale_time}}
+            staleTime: {{stale_time}},
+            {{/if}}
+          }),
+        {{/each}}
+      };
+
+      export { {{entity_name}}_쿼리 };
+
+# 실제 생성 예시:
+example_output: |
+  import { infiniteQueryOptions } from '@tanstack/react-query';
+  import { outfitsApi } from '../api/outfits';
+  import { OutfitsBookmarkCollectionListParams } from '../types/outfits';
+
+  const outfits_쿼리 = {
+    all: () => ['outfits'],
+    lists: () => [...outfits_쿼리.all(), 'list'],
+    bookmarkCollectionList: (query: OutfitsBookmarkCollectionListParams) =>
+      infiniteQueryOptions({
+        queryKey: [...outfits_쿼리.lists(), 'bookmark-collections', query],
+        queryFn: async ({ pageParam }) => {
+          return outfitsApi.outfitsBookmarkCollectionList({
+            ...query,
+            cursor: pageParam,
+          });
+        },
+        initialPageParam: '',
+        getNextPageParam: lastPage => lastPage.nextCursor,
+        staleTime: 300000, // 5분
+      }),
+  };
+
+  export { outfits_쿼리 };
