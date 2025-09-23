@@ -1,0 +1,126 @@
+# Mock Data Generator Template
+# <!-- Powered by BMAD™ Core -->
+
+template:
+  id: mock-data-template-v1
+  name: Mock Data Generator
+  version: 1.0
+  output:
+    format: typescript
+    filename: "{{output_directory}}/{{entity_name}}-mock.ts"
+
+sections:
+  - id: mock_data
+    content: |
+      // Mock data for {{entity_name}}
+      {{#if is_list}}
+      export const mock{{entity_pascal}}List = {
+        data: [
+          {{#each mock_items}}
+          {{mock_object}},
+          {{/each}}
+        ],
+        {{#if has_pagination}}
+        nextCursor: "{{next_cursor_mock}}",
+        hasMore: {{has_more_mock}},
+        {{/if}}
+      };
+      {{/if}}
+
+      {{#if has_detail}}
+      export const mock{{entity_pascal}}Detail = {{mock_detail_object}};
+      {{/if}}
+
+      // Type-safe mock functions
+      export const {{entity_name}}MockApi = {
+        {{#each mock_functions}}
+        {{function_name}}: ({{function_params}}) => {{function_return}},
+        {{/each}}
+      };
+
+# Mock 데이터 생성 규칙
+mock_generation_rules:
+  string_patterns:
+    id:
+      - pattern: "uuid"
+        example: "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6"
+      - pattern: "prefix_number"
+        example: "{{entity}}_1"
+
+    name:
+      - pattern: "korean_name"
+        examples: ["여름 코디 컬렉션", "비즈니스 캐주얼", "데일리 룩북"]
+
+    description:
+      - pattern: "korean_description"
+        examples:
+          ["시원하고 편안한 여름 코디들", "직장에서 입기 좋은 깔끔한 코디"]
+
+    email:
+      - pattern: "email"
+        example: "user@example.com"
+
+    url_fields:
+      - pattern: "https_url"
+        example: "https://example.com/{{entity}}/{{id}}.jpg"
+
+    date_fields:
+      - pattern: "iso_date"
+        example: "2024-09-20T14:30:00Z"
+
+  number_patterns:
+    count_fields:
+      - range: [1, 100]
+      - example: 12
+
+    price_fields:
+      - pattern: "thousand_units"
+      - example: 25000
+
+    age:
+      - range: [20, 60]
+      - example: 28
+
+  boolean_patterns:
+    is_public: true
+    is_active: true
+    has_more: true
+    default: true
+
+# 실제 생성 예시:
+example_output: |
+  // Mock data for outfits
+  export const mockOutfitBookmarkCollectionList = {
+    data: [
+      {
+        id: "col_1",
+        name: "여름 코디 컬렉션",
+        description: "시원하고 편안한 여름 코디들",
+        imageUrl: "https://example.com/summer-collection.jpg",
+        itemCount: 12,
+        isPublic: true,
+        createdAt: "2024-06-15T09:00:00Z",
+        updatedAt: "2024-09-20T14:30:00Z",
+      },
+      {
+        id: "col_2", 
+        name: "비즈니스 캐주얼",
+        description: "직장에서 입기 좋은 깔끔한 코디",
+        imageUrl: "https://example.com/business-casual.jpg",
+        itemCount: 8,
+        isPublic: false,
+        createdAt: "2024-07-10T11:15:00Z",
+        updatedAt: "2024-09-18T16:45:00Z",
+      },
+    ],
+    nextCursor: "cursor_page_2",
+    hasMore: true,
+  };
+
+  // Type-safe mock functions
+  export const outfitsBookmarkMockApi = {
+    outfitsBookmarkCollectionList: (query) => {
+      // Filter mock data based on query parameters
+      return Promise.resolve(mockOutfitBookmarkCollectionList);
+    },
+  };
