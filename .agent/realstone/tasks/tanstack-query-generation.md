@@ -46,9 +46,11 @@ Following TanStack Query conventions (@tanstack-guide.md):
 
 4. **Return Type Analysis**
 
-   - Extract response types
+   - Extract response types from `@response` annotation
+   - Parse TypeScript type definition to understand structure
    - Check pagination structure (cursor, hasMore, etc.)
    - Distinguish between single/multiple data
+   - Analyze nested object properties and their types
 
 5. **Pagination Detection**
    - Check if function name contains "List"
@@ -134,15 +136,28 @@ Following TanStack Query conventions (@tanstack-guide.md):
 }
 ```
 
-#### Mock Data-specific Variables
+#### Mock Data-specific Variables (Enhanced)
 
 ```typescript
 {
+  // Type Analysis
+  response_type_name: string;    // e.g., "DomainMyIdeasListResponse"
+  type_definition: TypeStructure; // Parsed TypeScript type structure
+
+  // Generated Mock Data
   mock_items_count: number;      // Mock item count (2-3 items)
-  mock_objects: object[];        // Mock data objects
+  mock_objects: object[];        // Type-safe mock data objects
+  mock_structure: object;        // Complete mock response structure
+
+  // Pagination (if applicable)
   has_pagination: boolean;       // Whether pagination included
+  pagination_fields: string[];   // e.g., ["nextCursor", "hasMore"]
   next_cursor_mock: string;      // Mock next cursor value
   has_more_mock: boolean;        // Mock hasMore value
+
+  // Type Import Information
+  required_imports: string[];    // Additional types needed for mock
+  mock_function_signature: string; // Type-safe mock function signature
 }
 ```
 
@@ -158,11 +173,34 @@ Following TanStack Query conventions (@tanstack-guide.md):
 }
 ```
 
-### Step 5: Mock Data Generation Logic
+### Step 5: Mock Data Generation Logic (Type-Safe Approach)
 
-#### Type-based Mock Data Generation
+#### 1. TypeScript Type Analysis
 
-1. **String Type Mapping**
+**New Approach**: Parse actual TypeScript response types from `@response` annotations:
+
+```typescript
+// Extract from API spec:
+// @response `200` `DomainMyIdeasListResponse` 내 아이디어 목록 조회 반환값
+
+// Steps:
+1. Extract response type name: "DomainMyIdeasListResponse"
+2. Look up type definition in data-contracts
+3. Analyze type structure recursively
+4. Generate mock data matching exact structure
+```
+
+#### 2. Type-based Mock Data Generation
+
+**Priority Order for Mock Value Generation:**
+
+1. **Actual Type Structure** (Highest Priority)
+
+   - Parse TypeScript interface/type definition
+   - Generate mock data matching exact property types
+   - Preserve optional/required property distinction
+
+2. **Property Name Heuristics** (Fallback)
 
    - `id` → UUID format or "prefix_1" format
    - `name`, `title` → Meaningful Korean names
@@ -171,23 +209,74 @@ Following TanStack Query conventions (@tanstack-guide.md):
    - `*Url`, `*url` → "https://example.com/..." format
    - `*At` (dates) → ISO date strings
 
-2. **Number Type Mapping**
+3. **Type-based Defaults** (Final Fallback)
+   - `string` → "샘플 텍스트"
+   - `number` → Random between 1-100
+   - `boolean` → true
+   - `Array<T>` → Generate 2-3 items of type T
 
-   - `*Count`, `*count` → Random between 1-100
-   - `price*`, `*Price` → Prices in thousands units
-   - `age` → Between 20-60
-   - Default → Random between 1-1000
+#### 3. Enhanced Type Analysis Process
 
-3. **Boolean Type Mapping**
+```typescript
+interface MockGenerationContext {
+  responseTypeName: string; // e.g., "DomainMyIdeasListResponse"
+  typeDefinition: TypeStructure; // Parsed from data-contracts
+  isPaginated: boolean; // Has pagination fields
+  isArray: boolean; // Is array response
+  nestedTypes: string[]; // Referenced types to resolve
+}
 
-   - `is*`, `has*` → Appropriate values based on meaning
-   - `*Public` → true (public)
-   - `*Active` → true (active)
-   - Default → true
+interface TypeStructure {
+  properties: Property[];
+  required: string[];
+  extends?: string;
+}
 
-4. **Array Type Processing**
-   - Generate arrays with 2-3 items
-   - Set different values for each item
+interface Property {
+  name: string;
+  type: "string" | "number" | "boolean" | "object" | "array";
+  arrayItemType?: string;
+  objectType?: string;
+  optional: boolean;
+  description?: string;
+}
+```
+
+#### 4. Mock Data Generation Strategy
+
+```typescript
+// Example: Generate mock for DomainMyIdeasListResponse
+function generateMockFromType(typeName: string): any {
+  // 1. Look up type definition
+  const typeDefinition = getTypeDefinition(typeName);
+
+  // 2. Generate mock object
+  const mockObject = {};
+
+  // 3. For each property, generate appropriate mock value
+  typeDefinition.properties.forEach((prop) => {
+    mockObject[prop.name] = generateMockValue(prop);
+  });
+
+  return mockObject;
+}
+
+function generateMockValue(property: Property): any {
+  // Type-first approach
+  switch (property.type) {
+    case "array":
+      return generateMockArray(property.arrayItemType);
+    case "object":
+      return generateMockFromType(property.objectType);
+    case "string":
+      return generateStringMock(property.name);
+    case "number":
+      return generateNumberMock(property.name);
+    case "boolean":
+      return generateBooleanMock(property.name);
+  }
+}
+```
 
 ### Step 6: File Generation and Code Writing
 

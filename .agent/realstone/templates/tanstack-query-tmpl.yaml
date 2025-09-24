@@ -42,9 +42,10 @@ sections:
             // Real API call (commented out)
             // queryFn: {{query_fn_real}},
             
-            // Mock data usage (development)
+            // Type-safe mock data usage (development)
             queryFn: async ({ pageParam }) => {
               // TODO: Remove mock data and connect real API
+              // Using type-safe mock data: {{response_type_name}}
               return Promise.resolve({{mock_data_ref}});
             },
             {{else}}
@@ -63,11 +64,11 @@ sections:
 
       export { {{entity_camel}}Queries };
 
-# Example output (with Mock data):
+# Example output (with Type-Safe Mock data):
 example_output: |
   import { infiniteQueryOptions } from '@tanstack/react-query';
   import { myIdeasApi } from '@src/domains/app/swagger/acloset-api';
-  import type { MyIdeasListParams } from '@src/domains/app/swagger/generated/data-contracts';
+  import type { MyIdeasListParams, DomainMyIdeasListResponse } from '@src/domains/app/swagger/generated/data-contracts';
   import { getNextPageParam2 } from '@libs/react-query/utils';
   import { mockMyIdeasList } from './my-ideas-mock';
 
@@ -81,16 +82,17 @@ example_output: |
         // queryFn: async ({ pageParam }) => {
         //   return myIdeasApi.myIdeasList({
         //     ...query,
-        //     offset: pageParam,
+        //     cursor: pageParam,
         //   });
         // },
         
-        // Mock data usage (development)
+        // Type-safe mock data usage (development)
         queryFn: async ({ pageParam }) => {
           // TODO: Remove mock data and connect real API
+          // Using type-safe mock data: DomainMyIdeasListResponse
           return Promise.resolve(mockMyIdeasList);
         },
-        initialPageParam: 0,
+        initialPageParam: "",
         getNextPageParam: lastPage => getNextPageParam2(lastPage.pagination),
         staleTime: 300000, // 5 minutes
       }),

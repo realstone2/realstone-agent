@@ -21,7 +21,7 @@ TanStack Query 전문 개발 에이전트 - API 스펙으로부터 고품질 Tan
 
 ## 파일 구조
 
-```
+```text
 .agent/
 ├── .core/agents/
 │   └── realstone.md                # 핵심 에이전트 정의 파일
@@ -41,7 +41,7 @@ TanStack Query 전문 개발 에이전트 - API 스펙으로부터 고품질 Tan
 
 ### 1. 에이전트 활성화
 
-```
+```bash
 @realstone
 ```
 
@@ -49,7 +49,7 @@ TanStack Query 전문 개발 에이전트 - API 스펙으로부터 고품질 Tan
 
 #### TanStack Query 코드 생성
 
-```
+```bash
 tanstack-query-gen {API 스펙}
 ```
 
@@ -88,7 +88,7 @@ myIdeasList = (query: MyIdeasListParams, params: RequestParams = {}) =>
 
 모든 API에 대해 코드 생성 경로를 지정해야 합니다:
 
-```
+```text
 📂 코드를 생성할 디렉토리 경로를 입력해주세요:
 (예: src/hooks/api, hooks/api, etc.)
 ```
@@ -97,7 +97,7 @@ myIdeasList = (query: MyIdeasListParams, params: RequestParams = {}) =>
 
 GET API인 경우 Mock 데이터 생성 여부를 선택할 수 있습니다:
 
-```
+```text
 📝 Mock 데이터도 함께 생성하시겠습니까?
 
 1. Yes - Generate Query + Mock data
@@ -174,12 +174,15 @@ function CreateIdea() {
 - ✅ 적절한 `staleTime` 및 `gcTime` 자동 설정
 - ✅ `getNextPageParam2` 헬퍼 함수 활용
 
-### Mock 데이터 생성
+### Mock 데이터 생성 (Enhanced Type-Safe)
 
-- ✅ 타입 기반 실제적인 데이터 생성
-- ✅ 한글 문맥에 맞는 Mock 데이터
-- ✅ 페이지네이션 지원 Mock 구조
-- ✅ Type-safe Mock API 함수
+- ✅ **API 반환 타입 분석**: `@response` 주석에서 실제 TypeScript 타입 추출
+- ✅ **타입 기반 정확한 생성**: 실제 API 응답 구조와 100% 일치하는 Mock 데이터
+- ✅ **TypeScript 타입 주석**: Mock 데이터에 정확한 타입 정보 포함
+- ✅ **네스티드 타입 지원**: 복잡한 중첩 객체 구조도 정확히 생성
+- ✅ **한글 컨텍스트**: 의미에 맞는 한국어 Mock 데이터
+- ✅ **페이지네이션 지원**: 실제 페이지네이션 구조 분석 및 Mock 생성
+- ✅ **Type-safe Mock API**: 타입 안전한 Mock 함수 자동 생성
 
 ## 컨벤션
 
@@ -263,11 +266,32 @@ import { myIdeasApi } from "@src/domains/app/swagger/acloset-api";
 - `closets` → `closetsApi`
 - `ideas` → `ideasApi`
 
-## Mock 데이터 생성 규칙
+## Enhanced Mock 데이터 생성 규칙 (Type-Safe)
 
-### 타입별 Mock 값 매핑
+### 타입 우선 생성 전략
 
-#### 문자열 타입
+#### 1순위: TypeScript 타입 분석 (최우선)
+
+**프로세스:**
+
+1. API 스펙의 `@response` 주석에서 응답 타입명 추출
+2. data-contracts에서 TypeScript 타입 정의 파싱
+3. 중첩 타입과 속성들을 재귀적으로 분석
+4. 정확한 타입 구조에 맞는 Mock 데이터 생성
+
+**타입 분석 규칙:**
+
+- `string` → 속성명 컨텍스트에 기반해 생성
+- `number` → 속성명과 제약조건에 기반해 생성
+- `boolean` → 속성의 의미적 맥락에 기반해 생성
+- `Array<T>` → T 타입의 2-3개 아이템 생성
+- `object` → 중첩 객체 속성들을 재귀적으로 생성
+- `union` → union의 첫 번째 타입 선택하여 Mock 생성
+- `optional?` → 선택적 속성은 80% 확률로 포함
+
+#### 2순위: 속성명 휴리스틱 (폴백)
+
+**문자열 타입:**
 
 - `id`: UUID 형식 또는 접두사\_숫자 형식
 - `name`, `title`: 의미있는 한글명
@@ -276,25 +300,37 @@ import { myIdeasApi } from "@src/domains/app/swagger/acloset-api";
 - `url`, `imageUrl`: 예시 URL
 - `createdAt`, `updatedAt`: ISO 날짜 문자열
 
-#### 숫자 타입
+**숫자 타입:**
 
 - `count`, `itemCount`: 1-100 사이 랜덤
 - `price`: 1000단위 가격
 - `age`: 20-60 사이
 
-#### 불린 타입
+**불린 타입:**
 
 - 의미에 따라 적절한 기본값 설정
 
-### 배열 Mock 데이터
+#### 3순위: 타입 기반 기본값 (최종 폴백)
 
-- 기본 2-3개 아이템 생성
-- 다양성을 위해 각기 다른 값 설정
+- `string` → "샘플 텍스트"
+- `number` → 42
+- `boolean` → true
+- `Array<T>` → [] (타입을 모르는 경우 빈 배열)
+- `object` → {} (타입을 모르는 경우 빈 객체)
 
-### 페이지네이션 Mock
+### 타입 안전한 Mock 출력
 
-- `nextCursor`: "cursor_page_2" 형식
-- `hasMore`: true (테스트 편의성)
+**생성되는 Mock 구조:**
+
+```typescript
+// 타입 주석 포함
+export const mockEntityList: ResponseTypeName = { ... };
+
+// 타입 안전한 Mock 함수들
+export const entityMockApi = {
+  methodName: (params: ParamsType): Promise<ResponseType> => { ... }
+};
+```
 
 ## 향후 확장 계획
 

@@ -10,117 +10,127 @@ template:
     filename: "{{output_directory}}/{{entity_name}}-mock.ts"
 
 sections:
+  - id: imports
+    content: |
+      // Type-safe mock data for {{entity_name}}
+      {{#if required_imports}}
+      import type { {{#each required_imports}}{{this}}{{#unless @last}}, {{/unless}}{{/each}} } from '@src/domains/app/swagger/generated/data-contracts';
+      {{/if}}
+
   - id: mock_data
     content: |
-      // Mock data for {{entity_name}}
+      // Generated from TypeScript type: {{response_type_name}}
       {{#if is_list}}
-      export const mock{{entity_pascal}}List = {
-        data: [
-          {{#each mock_items}}
-          {{mock_object}},
-          {{/each}}
-        ],
-        {{#if has_pagination}}
-        nextCursor: "{{next_cursor_mock}}",
-        hasMore: {{has_more_mock}},
-        {{/if}}
-      };
+      export const mock{{entity_pascal}}List: {{response_type_name}} = {{mock_structure}};
       {{/if}}
 
       {{#if has_detail}}
-      export const mock{{entity_pascal}}Detail = {{mock_detail_object}};
+      export const mock{{entity_pascal}}Detail: {{response_type_name}} = {{mock_detail_object}};
       {{/if}}
 
-      // Type-safe mock functions
+      // Type-safe mock API functions
       export const {{entity_name}}MockApi = {
         {{#each mock_functions}}
-        {{function_name}}: ({{function_params}}) => {{function_return}},
+        {{function_name}}: {{mock_function_signature}} => {{function_return}},
         {{/each}}
       };
 
-# Mock 데이터 생성 규칙
-mock_generation_rules:
-  string_patterns:
-    id:
-      - pattern: "uuid"
-        example: "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6"
-      - pattern: "prefix_number"
-        example: "{{entity}}_1"
+# Enhanced Mock 데이터 생성 규칙 (Type-First Approach)
+mock_generation_strategy:
+  # Priority 1: TypeScript Type Definition Analysis
+  type_analysis:
+    description: "Parse actual TypeScript types from @response annotations"
+    process: 1. Extract response type name from API spec
+      2. Look up type definition in data-contracts
+      3. Recursively analyze nested types and properties
+      4. Generate mock data matching exact type structure
 
-    name:
-      - pattern: "korean_name"
-        examples: ["여름 코디 컬렉션", "비즈니스 캐주얼", "데일리 룩북"]
+    type_mapping:
+      string: "Generate based on property name context"
+      number: "Generate based on property name and constraints"
+      boolean: "Generate based on property semantic meaning"
+      array: "Generate 2-3 items of the array element type"
+      object: "Recursively generate nested object properties"
+      union: "Select first type from union for mock data"
+      optional: "Include optional properties with 80% probability"
 
-    description:
-      - pattern: "korean_description"
-        examples:
-          ["시원하고 편안한 여름 코디들", "직장에서 입기 좋은 깔끔한 코디"]
+  # Priority 2: Property Name Heuristics (Fallback)
+  name_based_generation:
+    string_patterns:
+      id: ["uuid", "prefix_number"]
+      name: ["korean_names"]
+      title: ["korean_titles"]
+      description: ["korean_descriptions"]
+      email: ["valid_email_format"]
+      url: ["https_urls"]
+      date_time: ["iso_datetime"]
 
-    email:
-      - pattern: "email"
-        example: "user@example.com"
+    number_patterns:
+      count: [1, 100]
+      price: [1000, 100000]
+      age: [20, 60]
+      default: [1, 1000]
 
-    url_fields:
-      - pattern: "https_url"
-        example: "https://example.com/{{entity}}/{{id}}.jpg"
+    boolean_patterns:
+      is_active: true
+      is_public: true
+      has_more: true
+      default: true
 
-    date_fields:
-      - pattern: "iso_date"
-        example: "2024-09-20T14:30:00Z"
+  # Priority 3: Type-based Defaults (Final Fallback)
+  type_defaults:
+    string: "샘플 텍스트"
+    number: 42
+    boolean: true
+    array: "[] (empty array if type unknown)"
+    object: "{} (empty object if type unknown)"
 
-  number_patterns:
-    count_fields:
-      - range: [1, 100]
-      - example: 12
-
-    price_fields:
-      - pattern: "thousand_units"
-      - example: 25000
-
-    age:
-      - range: [20, 60]
-      - example: 28
-
-  boolean_patterns:
-    is_public: true
-    is_active: true
-    has_more: true
-    default: true
-
-# 실제 생성 예시:
+# 실제 생성 예시 (Type-Safe):
 example_output: |
-  // Mock data for outfits
-  export const mockOutfitBookmarkCollectionList = {
+  // Type-safe mock data for my-ideas
+  import type { DomainMyIdeasListResponse, MyIdeasListParams } from '@src/domains/app/swagger/generated/data-contracts';
+
+  // Generated from TypeScript type: DomainMyIdeasListResponse
+  export const mockMyIdeasList: DomainMyIdeasListResponse = {
     data: [
       {
-        id: "col_1",
-        name: "여름 코디 컬렉션",
-        description: "시원하고 편안한 여름 코디들",
-        imageUrl: "https://example.com/summer-collection.jpg",
-        itemCount: 12,
-        isPublic: true,
-        createdAt: "2024-06-15T09:00:00Z",
+        id: "idea_a1b2c3d4",
+        title: "혁신적인 아이디어 1",
+        description: "창의적이고 실용적인 아이디어입니다",
+        category: "기술",
+        tags: ["혁신", "기술", "개발"],
+        status: "active",
+        priority: 1,
+        createdAt: "2024-09-15T10:30:00Z",
         updatedAt: "2024-09-20T14:30:00Z",
+        authorId: "user_12345",
+        isPublic: true,
       },
       {
-        id: "col_2", 
-        name: "비즈니스 캐주얼",
-        description: "직장에서 입기 좋은 깔끔한 코디",
-        imageUrl: "https://example.com/business-casual.jpg",
-        itemCount: 8,
-        isPublic: false,
-        createdAt: "2024-07-10T11:15:00Z",
+        id: "idea_e5f6g7h8", 
+        title: "비즈니스 모델 혁신",
+        description: "새로운 비즈니스 접근 방식",
+        category: "비즈니스",
+        tags: ["비즈니스", "전략", "혁신"],
+        status: "draft",
+        priority: 2,
+        createdAt: "2024-09-10T09:15:00Z",
         updatedAt: "2024-09-18T16:45:00Z",
+        authorId: "user_12345", 
+        isPublic: false,
       },
     ],
-    nextCursor: "cursor_page_2",
-    hasMore: true,
+    pagination: {
+      nextCursor: "cursor_page_2",
+      hasMore: true,
+      totalCount: 25,
+    },
   };
 
-  // Type-safe mock functions
-  export const outfitsBookmarkMockApi = {
-    outfitsBookmarkCollectionList: (query) => {
-      // Filter mock data based on query parameters
-      return Promise.resolve(mockOutfitBookmarkCollectionList);
+  // Type-safe mock API functions
+  export const myIdeasMockApi = {
+    myIdeasList: (params: MyIdeasListParams): Promise<DomainMyIdeasListResponse> => {
+      // TODO: Add filtering logic based on params
+      return Promise.resolve(mockMyIdeasList);
     },
   };

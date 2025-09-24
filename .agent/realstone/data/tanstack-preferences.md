@@ -103,11 +103,32 @@ import { {entity}Api } from '@src/domains/app/swagger/acloset-api';
 - `closets` → `closetsApi`
 - `ideas` → `ideasApi`
 
-## Mock Data Generation Rules
+## Enhanced Mock Data Generation Rules (Type-Safe)
 
-### Basic Mock Value Mapping
+### Type-First Mock Generation Strategy
 
-#### String Types
+#### Priority 1: TypeScript Type Analysis (Highest Priority)
+
+**Process:**
+
+1. Extract response type name from `@response` annotation in API spec
+2. Parse TypeScript type definition from data-contracts
+3. Recursively analyze nested types and properties
+4. Generate mock data matching exact type structure
+
+**Type Analysis Rules:**
+
+- `string` → Generate based on property name context
+- `number` → Generate based on property name and constraints
+- `boolean` → Generate based on property semantic meaning
+- `Array<T>` → Generate 2-3 items of type T
+- `object` → Recursively generate nested object properties
+- `union` → Select first type from union for mock data
+- `optional?` → Include optional properties with 80% probability
+
+#### Priority 2: Property Name Heuristics (Fallback)
+
+**String Types:**
 
 - `id`: UUID format or prefix_number format
 - `name`, `title`: Meaningful Korean names
@@ -116,29 +137,41 @@ import { {entity}Api } from '@src/domains/app/swagger/acloset-api';
 - `url`, `imageUrl`: Example URLs
 - `createdAt`, `updatedAt`: ISO date strings
 
-#### Number Types
+**Number Types:**
 
 - `count`, `itemCount`: Random between 1-100
 - `price`: Prices in thousands units
 - `age`: Between 20-60
 
-#### Boolean Types
+**Boolean Types:**
 
 - Set appropriate default values based on meaning
 
-### Array Mock Data
+#### Priority 3: Type-based Defaults (Final Fallback)
 
-- Generate 2-3 items by default
-- Set different values for variety
+- `string` → "샘플 텍스트"
+- `number` → 42
+- `boolean` → true
+- `Array<T>` → [] (empty array if type unknown)
+- `object` → {} (empty object if type unknown)
 
-### Pagination Mock
+### Type-Safe Mock Output
 
-- `nextCursor`: "cursor_page_2" format
-- `hasMore`: true (for testing convenience)
+**Generated Mock Structure:**
+
+```typescript
+// Type annotation included
+export const mockEntityList: ResponseTypeName = { ... };
+
+// Type-safe mock functions
+export const entityMockApi = {
+  methodName: (params: ParamsType): Promise<ResponseType> => { ... }
+};
+```
 
 ## Mock Data Application Rules
 
-### Using Mock Data in Query Options
+### Using Type-Safe Mock Data in Query Options
 
 When mock data generation is selected:
 
@@ -151,9 +184,17 @@ When mock data generation is selected:
 //   });
 // },
 
-// Mock data usage (development)
+// Type-safe mock data usage (development)
 queryFn: async ({ pageParam }) => {
   // TODO: Remove mock data and connect real API
+  // Using type-safe mock data: {ResponseTypeName}
   return Promise.resolve(mock{EntityPascal}List);
 },
 ```
+
+**Key Improvements:**
+
+- Mock data includes exact TypeScript type annotation
+- Generated data structure matches API response type
+- Type safety maintained throughout development
+- Easy transition from mock to real API
